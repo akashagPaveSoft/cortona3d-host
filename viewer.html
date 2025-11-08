@@ -65,11 +65,7 @@
                         try {
                             window.Cortona3DSolo.use('core');
                             var modelUrl = './data/pump-procedure/pump-procedure.wrl';
-                            window.Cortona3DSolo.app.initialize(modelUrl, document.getElementById('viewer'))
-                                .then(function (modelInfo) {
-                                    try { if (modelInfo && modelInfo.type === 'procedure') { window.Cortona3DSolo.app.procedure.play(); } } catch (e) { console.error(e); }
-                                })
-                                .catch(function (err) { console.error('Cortona initialize error:', err); });
+                            
                         } catch (e) { console.error('Cortona init catch', e); }
                     } else {
                         setTimeout(init, 100);
