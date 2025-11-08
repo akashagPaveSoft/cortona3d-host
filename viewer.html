@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Cortona3D Viewer</title>
+    <style>
+        html,
+        body,
+        #viewer {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #viewer {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="viewer"></div>
+    <!-- Polyfill: fallback for WebAssembly.instantiateStreaming when server returns incorrect MIME type -->
+    <script>
+        (function () {
+            if (typeof WebAssembly === 'object' && typeof WebAssembly.instantiateStreaming === 'function') {
+                const orig = WebAssembly.instantiateStreaming.bind(WebAssembly);
+                WebAssembly.instantiateStreaming = async function (respPromise, importObject) {
+                    try {
+                        return await orig(respPromise, importObject);
+                    } catch (err) {
+                        // If instantiateStreaming fails (often due to incorrect MIME type), fall back
+                        try {
+                            const resp = await Promise.resolve(respPromise);
+                            const buffer = await resp.arrayBuffer();
+                            return await WebAssembly.instantiate(buffer, importObject);
+                        } catch (e) {
+                            console.warn('WebAssembly.instantiateStreaming fallback failed', e);
+                            throw err;
+                        }
+                    }
+                };
+            } else if (typeof WebAssembly === 'object' && typeof WebAssembly.instantiateStreaming !== 'function') {
+                // Provide a simple instantiateStreaming shim
+                WebAssembly.instantiateStreaming = async function (respPromise, importObject) {
+                    const resp = await Promise.resolve(respPromise);
+                    const buffer = await resp.arrayBuffer();
+                    return await WebAssembly.instantiate(buffer, importObject);
+                };
+            }
+        })();
+    </script>
+    <!-- Cortona scripts are expected to be in the same static resource root -->
+    <script src="./Cortona3DSoloCore.js"></script>
+    <script src="./Cortona3DSolo.js"></script>
+    <script>
+        (function () {
+            'use strict';
+            try {
+                function init() {
+                    if (window.Cortona3DSolo && window.Cortona3DSolo.app) {
+                        try {
+                            window.Cortona3DSolo.use('core');
+                            var modelUrl = './data/pump-procedure/pump-procedure.wrl';
+                            window.Cortona3DSolo.app.initialize(modelUrl, document.getElementById('viewer'))
+                                .then(function (modelInfo) {
+                                    try { if (modelInfo && modelInfo.type === 'procedure') { window.Cortona3DSolo.app.procedure.play(); } } catch (e) { console.error(e); }
+                                })
+                                .catch(function (err) { console.error('Cortona initialize error:', err); });
+                        } catch (e) { console.error('Cortona init catch', e); }
+                    } else {
+                        setTimeout(init, 100);
+                    }
+                }
+                init();
+            } catch (e) { console.error(e); }
+        })();
+    </script>
+</body>
+
+</html>
